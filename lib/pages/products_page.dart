@@ -10,6 +10,9 @@ import '../features/products/widgets/filter_bar.dart';
 import '../features/products/widgets/filter_bottom_sheet.dart';
 import '../features/products/widgets/search_field.dart';
 
+// PAGES
+import '../features/product-item/pages/product_detail_page.dart';
+
 class ProductsPage extends StatefulWidget {
   const ProductsPage({super.key});
 
@@ -156,7 +159,13 @@ class _ProductsPageState extends State<ProductsPage> {
                         price: product.price,
                         oldPrice: product.oldPrice,
                         isSoldOut: product.isSoldOut,
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const ProductDetailPage(),
+                            ),
+                          );
+                        },
                       );
                     },
                   ),

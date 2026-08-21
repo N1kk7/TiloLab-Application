@@ -5,6 +5,10 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import 'product_card.dart';
 
+
+// PAGES
+import '../../product-item/pages/product_detail_page.dart';
+
 class ProductSectionItem {
   final String name;
   final String imageUrl;
@@ -88,7 +92,13 @@ class ProductSection extends StatelessWidget {
                   price: product.price,
                   oldPrice: product.oldPrice,
                   isSoldOut: product.isSoldOut,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ProductDetailPage(),
+                      ),
+                    );
+                  },
                 ),
               ); 
             },
