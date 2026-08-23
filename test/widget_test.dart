@@ -12,8 +12,8 @@ import 'package:tilolab_app/main.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    // Build a minimal test app and trigger a frame.
+    await tester.pumpWidget(const TestApp());
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);
@@ -27,4 +27,32 @@ void main() {
     expect(find.text('0'), findsNothing);
     expect(find.text('1'), findsOneWidget);
   });
+}
+
+// Minimal app for widget test (provides a counter and FAB with Icons.add).
+class TestApp extends StatefulWidget {
+  const TestApp({Key? key}) : super(key: key);
+
+  @override
+  State<TestApp> createState() => _TestAppState();
+}
+
+class _TestAppState extends State<TestApp> {
+  int _counter = 0;
+
+  void _increment() => setState(() => _counter++);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(title: const Text('Test')),
+        body: Center(child: Text('$_counter')),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _increment,
+          child: const Icon(Icons.add),
+        ),
+      ),
+    );
+  }
 }

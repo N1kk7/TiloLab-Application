@@ -1,12 +1,23 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_spacing.dart';
-import '../features/home/widgets/category_list.dart';
+import 'package:tilolab_app/core/api/api_client.dart';
 
-// import '../widgets/category_list.dart';
+import '../../../core/theme/app_spacing.dart';
+
+import '../features/home/widgets/category_list.dart';
 import '../features/home/widgets/hero_banner.dart';
 import '../features/home/widgets/product_section.dart';
 import '../features/home/widgets/feature_highlights.dart';
+
+import 'package:tilolab_app/core/theme/app_text_styles.dart';
+
+import '../features/home/data/category_repository.dart';
+
+import '../models/category/category.dart';
+import '../models/product/product.dart';
+
+import '../../repositories/product_repository.dart';
+import '../models/product/product_page.dart';
 
 class IndexPage extends StatefulWidget {
   const IndexPage({super.key});
@@ -16,123 +27,459 @@ class IndexPage extends StatefulWidget {
 }
 
 class _IndexPageState extends State<IndexPage> {
+  // ============================================================
+  // REPOSITORIES
+  // ============================================================
+
+  final categoryRepository = CategoryRepository(
+    apiClient: ApiClient(),
+  );
+
+  final ProductRepository productRepository =
+      ProductRepository(ApiClient());
+
+  // ============================================================
+  // CATEGORIES
+  // ============================================================
+
+  List<Category> categories = [];
+
   int selectedCategory = 0;
 
-  final categories = const [
-    CategoryItem(label: 'Всі', icon: Icons.apps),
-    CategoryItem(label: 'Для неї', icon: Icons.favorite_border),
-    CategoryItem(label: 'Для нього', icon: Icons.male_outlined),
-    CategoryItem(label: 'Лубриканти', icon: Icons.water_drop_outlined),
-    CategoryItem(label: 'Подарунки', icon: Icons.card_giftcard_outlined),
-  ];
+  bool isLoadingCategories = false;
 
-  final certificates = const [
-    ProductSectionItem(
-      name: 'Подарунковий сертифікат 5000 грн',
-      imageUrl: 'https://picsum.photos/seed/cert1/400',
-      price: 5000,
-      isSoldOut: true,
-    ),
-    ProductSectionItem(
-      name: 'Подарунковий сертифікат 1000 грн',
-      imageUrl: 'https://picsum.photos/seed/cert2/400',
-      price: 1000,
-    ),
-  ];
+  // ============================================================
+  // PRODUCTS
+  // ============================================================
 
-  final forHer = const [
-    ProductSectionItem(
-      name: 'Вібратор Silky Touch',
-      imageUrl: 'https://picsum.photos/seed/1/400',
-      price: 1200,
-    ),
-    ProductSectionItem(
-      name: 'Набір для масажу',
-      imageUrl: 'https://picsum.photos/seed/2/400',
-      price: 890,
-      oldPrice: 1100,
-    ),
-    ProductSectionItem(
-      name: 'Кільце ніжності',
-      imageUrl: 'https://picsum.photos/seed/3/400',
-      price: 650,
-      isSoldOut: true,
-    ),
-  ];
+  List<Product> forHer = [];
+  List<Product> forHim = [];
 
-  final forHim = const [
-    ProductSectionItem(
-      name: 'Мастурбатор Pulse',
-      imageUrl: 'https://picsum.photos/seed/4/400',
-      price: 1500,
-    ),
-    ProductSectionItem(
-      name: 'Кільце витривалості',
-      imageUrl: 'https://picsum.photos/seed/5/400',
-      price: 400,
-    ),
-    ProductSectionItem(
-      name: 'Набір для двох',
-      imageUrl: 'https://picsum.photos/seed/6/400',
-      price: 2200,
-      oldPrice: 2600,
-    ),
-  ];
+  bool isLoadingProducts = false;
+
+  // ============================================================
+  // INIT
+  // ============================================================
+
+  @override
+  void initState() {
+    super.initState();
+
+    loadHomeData();
+  }
+
+  // ============================================================
+  // FIND CATEGORY
+  // ============================================================
+
+  Category? findCategory({
+    required List<String> groups,
+    required String title,
+  }) {
+    for (final category in categories) {
+      // Сначала проверяем group
+      if (groups.contains(category.group)) {
+        return category;
+      }
+
+      // Если group отличается — проверяем украинский title
+      if (category.title.trim().toLowerCase() ==
+          title.trim().toLowerCase()) {
+        return category;
+      }
+    }
+
+    return null;
+  }
+
+  // ============================================================
+  // LOAD HOME DATA
+  // ============================================================
+
+  Future<void> loadHomeData() async {
+    if (mounted) {
+      setState(() {
+        isLoadingCategories = true;
+        isLoadingProducts = true;
+      });
+    }
+
+    try {
+      // ----------------------------------------------------------
+      // 1. CATEGORIES
+      // ----------------------------------------------------------
+
+      final loadedCategories =
+          await categoryRepository.getCategories();
+
+      if (!mounted) return;
+
+      setState(() {
+        categories = loadedCategories;
+        isLoadingCategories = false;
+      });
+
+      // ----------------------------------------------------------
+      // DEBUG
+      // ----------------------------------------------------------
+
+      for (final category in categories) {
+        print(
+          'CATEGORY: '
+          'id=${category.id}, '
+          'group=${category.group}, '
+          'title=${category.title}',
+        );
+      }
+
+      // ----------------------------------------------------------
+      // 2. FIND "FOR HER"
+      // ----------------------------------------------------------
+
+      final herCategory = findCategory(
+        groups: [
+          'Dlya-neyi',
+          'Dlya-nee',
+          'Dlya-nei',
+        ],
+        title: 'Для неї',
+      );
+
+      // ----------------------------------------------------------
+      // 3. FIND "FOR HIM"
+      // ----------------------------------------------------------
+
+      final himCategory = findCategory(
+        groups: [
+          'Dlya-nego',
+          'Dlya-nogo',
+          'Dlya-nego',
+        ],
+        title: 'Для нього',
+      );
+
+      print(
+        'HER CATEGORY: '
+        '${herCategory?.id} / ${herCategory?.group} / ${herCategory?.title}',
+      );
+
+      print(
+        'HIM CATEGORY: '
+        '${himCategory?.id} / ${himCategory?.group} / ${himCategory?.title}',
+      );
+
+      // ----------------------------------------------------------
+      // 4. PREPARE REQUESTS
+      // ----------------------------------------------------------
+
+      final futures = <Future<ProductPage>>[];
+
+      if (herCategory != null) {
+        futures.add(
+          productRepository.getProducts(
+            page: 1,
+            limit: 10,
+            categoryId: herCategory.id,
+          ),
+        );
+      }
+
+      if (himCategory != null) {
+        futures.add(
+          productRepository.getProducts(
+            page: 1,
+            limit: 10,
+            categoryId: himCategory.id,
+          ),
+        );
+      }
+
+      // ----------------------------------------------------------
+      // 5. LOAD PRODUCTS
+      // ----------------------------------------------------------
+
+      if (futures.isEmpty) {
+        if (mounted) {
+          setState(() {
+            isLoadingProducts = false;
+          });
+        }
+
+        return;
+      }
+
+      final results = await Future.wait(futures);
+
+      if (!mounted) return;
+
+      // ----------------------------------------------------------
+      // 6. DISTRIBUTE RESULTS
+      // ----------------------------------------------------------
+
+      int resultIndex = 0;
+
+      List<Product> newForHer = [];
+      List<Product> newForHim = [];
+
+      if (herCategory != null) {
+        newForHer = results[resultIndex].products;
+        resultIndex++;
+      }
+
+      if (himCategory != null) {
+        newForHim = results[resultIndex].products;
+        resultIndex++;
+      }
+
+      print('FOR HER PRODUCTS: ${newForHer.length}');
+      print('FOR HIM PRODUCTS: ${newForHim.length}');
+
+      // ----------------------------------------------------------
+      // 7. UPDATE STATE
+      // ----------------------------------------------------------
+
+      setState(() {
+        forHer = newForHer;
+        forHim = newForHim;
+
+        isLoadingProducts = false;
+      });
+    } catch (error, stackTrace) {
+      print('ERROR LOAD HOME DATA: $error');
+      print(stackTrace);
+
+      if (mounted) {
+        setState(() {
+          isLoadingCategories = false;
+          isLoadingProducts = false;
+        });
+      }
+    }
+  }
+
+  // ============================================================
+  // CATEGORY SELECT
+  // ============================================================
+
+  void onCategorySelected(int index) {
+    setState(() {
+      selectedCategory = index;
+    });
+  }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
+      padding: const EdgeInsets.only(
+        bottom: AppSpacing.xxl,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: AppSpacing.md),
+
+          // ======================================================
+          // HERO
+          // ======================================================
+
+          const SizedBox(
+            height: AppSpacing.md,
+          ),
 
           HeroBanner(
             title: 'Секс-девайси про\nніжність до тіла',
-            imageUrl: 'https://picsum.photos/seed/hero/800/900',
+            imageUrl:
+                'https://picsum.photos/seed/hero/800/900',
             ctaLabel: 'Обрати девайс',
             onCtaTap: () {},
           ),
 
-          const SizedBox(height: AppSpacing.xl),
-
-          CategoryList(
-            categories: categories,
-            selectedIndex: selectedCategory,
-            onSelected: (index) => setState(() => selectedCategory = index),
+          const SizedBox(
+            height: AppSpacing.xl,
           ),
 
-          const SizedBox(height: AppSpacing.xl),
+          // ======================================================
+          // CATEGORIES
+          // ======================================================
 
-          ProductSection(
-            title: 'Для неї',
-            products: forHer,
-            onSeeAll: () {},
+          if (isLoadingCategories)
+            const SizedBox(
+              height: 40,
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (categories.isNotEmpty)
+            CategoryList(
+              categories: categories,
+              selectedIndex: selectedCategory,
+              onSelected: onCategorySelected,
+            ),
+
+          const SizedBox(
+            height: AppSpacing.xl,
           ),
 
-          const SizedBox(height: AppSpacing.xl),
+          // ======================================================
+          // PRODUCTS
+          // ======================================================
 
-          ProductSection(
-            title: 'Для нього',
-            products: forHim,
-            onSeeAll: () {},
-          ),
+          if (isLoadingProducts)
 
-          const SizedBox(height: AppSpacing.xl),
+            const Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: AppSpacing.xl,
+              ),
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            )
 
-          ProductSection(
-            title: 'Подарункові сертифікати',
-            products: certificates,
-            onSeeAll: () {},
-          ),
+          else ...[
 
-          const SizedBox(height: AppSpacing.xl),
+            // ====================================================
+            // FOR HER
+            // ====================================================
+
+            if (forHer.isNotEmpty)
+              ProductSection(
+                title: 'Для неї',
+                products: forHer,
+                onSeeAll: () {
+                  // TODO:
+                  // открыть ProductsPage
+                },
+              ),
+
+            if (forHer.isNotEmpty)
+              const SizedBox(
+                height: AppSpacing.xl,
+              ),
+
+            // ====================================================
+            // FOR HIM
+            // ====================================================
+
+            if (forHim.isNotEmpty)
+              ProductSection(
+                title: 'Для нього',
+                products: forHim,
+                onSeeAll: () {
+                  // TODO:
+                  // открыть ProductsPage
+                },
+              ),
+
+            if (forHim.isNotEmpty)
+              const SizedBox(
+                height: AppSpacing.xl,
+              ),
+
+            // ====================================================
+            // CERTIFICATE
+            // ====================================================
+
+            const _CertificateCard(),
+
+            const SizedBox(
+              height: AppSpacing.xl,
+            ),
+          ],
+
+          // ======================================================
+          // FEATURES
+          // ======================================================
 
           const FeatureHighlights(),
 
-          const SizedBox(height: AppSpacing.xl),
+          const SizedBox(
+            height: AppSpacing.xl,
+          ),
         ],
+      ),
+    );
+  }
+}
+
+
+// ================================================================
+// CERTIFICATE CARD
+// ================================================================
+
+class _CertificateCard extends StatelessWidget {
+  const _CertificateCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+      ),
+      child: Container(
+        height: 210,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          image: const DecorationImage(
+            image: NetworkImage(
+              'https://picsum.photos/seed/gift-certificate/1000/500',
+            ),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [
+                Colors.black.withOpacity(0.65),
+                Colors.transparent,
+              ],
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Подарунковий сертифікат',
+                style: AppTextStyles.h3.copyWith(
+                  color: Colors.white,
+                ),
+              ),
+
+              const SizedBox(
+                height: AppSpacing.sm,
+              ),
+
+              Text(
+                'Подаруй можливість обрати щось особливе',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: Colors.white,
+                ),
+              ),
+
+              const SizedBox(
+                height: AppSpacing.md,
+              ),
+
+              ElevatedButton(
+                onPressed: () {
+                  // TODO:
+                  // открыть страницу сертификатов
+                },
+                child: const Text(
+                  'Обрати сертифікат',
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

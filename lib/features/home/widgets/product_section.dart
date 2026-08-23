@@ -3,31 +3,17 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+
 import 'product_card.dart';
 
+import '../../../models/product/product.dart';
 
-// PAGES
+// PAGE
 import '../../product-item/pages/product_detail_page.dart';
-
-class ProductSectionItem {
-  final String name;
-  final String imageUrl;
-  final int price;
-  final int? oldPrice;
-  final bool isSoldOut;
-
-  const ProductSectionItem({
-    required this.name,
-    required this.imageUrl,
-    required this.price,
-    this.oldPrice,
-    this.isSoldOut = false,
-  });
-}
 
 class ProductSection extends StatelessWidget {
   final String title;
-  final List<ProductSectionItem> products;
+  final List<Product> products;
   final VoidCallback? onSeeAll;
 
   const ProductSection({
@@ -43,11 +29,16 @@ class ProductSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title, style: AppTextStyles.h3),
+              Text(
+                title,
+                style: AppTextStyles.h3,
+              ),
 
               if (onSeeAll != null)
                 GestureDetector(
@@ -78,29 +69,37 @@ class ProductSection extends StatelessWidget {
           height: 248,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+            ),
             itemCount: products.length,
-            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
+            separatorBuilder: (_, __) =>
+                const SizedBox(width: AppSpacing.sm),
             itemBuilder: (context, index) {
               final product = products[index];
 
-                return SizedBox(
+              return SizedBox(
                 width: 160,
                 child: ProductCard(
-                  name: product.name,
-                  imageUrl: product.imageUrl,
-                  price: product.price,
-                  oldPrice: product.oldPrice,
-                  isSoldOut: product.isSoldOut,
+                  name: product.title,
+
+                  imageUrl: product.mainImage ?? '',
+
+                  price: product.productPrice.toInt(),
+
+                  isSoldOut: product.availableStock <= 0,
+
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const ProductDetailPage(),
+                        builder: (_) => ProductDetailPage(
+                          product: product,
+                        ),
                       ),
                     );
                   },
                 ),
-              ); 
+              );
             },
           ),
         ),

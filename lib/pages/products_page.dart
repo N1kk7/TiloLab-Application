@@ -13,6 +13,14 @@ import '../features/products/widgets/search_field.dart';
 // PAGES
 import '../features/product-item/pages/product_detail_page.dart';
 
+import 'package:tilolab_app/core/api/api_client.dart';
+
+import '../features/home/data/category_repository.dart';
+import '../models/category/category.dart';
+
+import '../models/product/product.dart';
+import '../../repositories/product_repository.dart';
+
 class ProductsPage extends StatefulWidget {
   const ProductsPage({super.key});
 
@@ -24,49 +32,123 @@ class _ProductsPageState extends State<ProductsPage> {
   int selectedCategory = 0;
   ProductFilters filters = const ProductFilters();
 
-  final categories = const [
-    CategoryItem(label: 'Всі', icon: Icons.apps),
-    CategoryItem(label: 'Для неї', icon: Icons.favorite_border),
-    CategoryItem(label: 'Для нього', icon: Icons.male_outlined),
-    CategoryItem(label: 'Лубриканти', icon: Icons.water_drop_outlined),
-    CategoryItem(label: 'Подарунки', icon: Icons.card_giftcard_outlined),
-  ];
+  final categoryRepository = CategoryRepository(
+    apiClient: ApiClient(),
+  );
 
-  final allProducts = const [
-    ProductSectionItem(
-      name: 'Вібратор Silky Touch',
-      imageUrl: 'https://picsum.photos/seed/1/400',
-      price: 1200,
-    ),
-    ProductSectionItem(
-      name: 'Набір для масажу',
-      imageUrl: 'https://picsum.photos/seed/2/400',
-      price: 890,
-      oldPrice: 1100,
-    ),
-    ProductSectionItem(
-      name: 'Кільце ніжності',
-      imageUrl: 'https://picsum.photos/seed/3/400',
-      price: 650,
-      isSoldOut: true,
-    ),
-    ProductSectionItem(
-      name: 'Мастурбатор Pulse',
-      imageUrl: 'https://picsum.photos/seed/4/400',
-      price: 1500,
-    ),
-    ProductSectionItem(
-      name: 'Кільце витривалості',
-      imageUrl: 'https://picsum.photos/seed/5/400',
-      price: 400,
-    ),
-    ProductSectionItem(
-      name: 'Набір для двох',
-      imageUrl: 'https://picsum.photos/seed/6/400',
-      price: 2200,
-      oldPrice: 2600,
-    ),
-  ];
+  List<Category> categories = [];
+
+  @override
+  void initState() {
+    super.initState();
+
+    loadCategories();
+    loadProducts();
+  }
+
+  bool isLoadingCategories = false;
+  bool isLoadingProducts = false;
+  bool isLoadingMore = false;
+
+  Future<void> loadCategories() async {
+    setState(() {
+      isLoadingCategories = true;
+    });
+
+    try {
+      final result = await categoryRepository.getCategories();
+
+      if (!mounted) return;
+
+      setState(() {
+        categories = result;
+      });
+    } catch (error) {
+      print('ERROR LOAD CATEGORIES: $error');
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoadingCategories = false;
+        });
+      }
+    }
+  }
+
+Future<void> loadProducts() async {
+  if (isLoadingProducts) return;
+
+  setState(() {
+    isLoadingProducts = true;
+  });
+
+  try {
+    final result = await productRepository.getProducts(
+      page: 1,
+      limit: 20,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      products = result.products;
+      currentPage = 1;
+      hasNextPage = result.hasNextPage;
+    });
+  } catch (error) {
+    print('ERROR LOAD PRODUCTS: $error');
+  } finally {
+    if (mounted) {
+      setState(() {
+        isLoadingProducts = false;
+      });
+    }
+  }
+}
+
+  Future<void> loadMoreProducts() async {
+  if (isLoadingMore || !hasNextPage) return;
+
+  setState(() {
+    isLoadingMore = true;
+  });
+
+  try {
+    final result = await productRepository.getProducts(
+      page: currentPage + 1,
+      limit: 20,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      products.addAll(result.products);
+
+      currentPage++;
+
+      hasNextPage = result.hasNextPage;
+    });
+  } catch (error) {
+    print('ERROR LOAD MORE: $error');
+  } finally {
+    if (mounted) {
+      setState(() {
+        isLoadingMore = false;
+      });
+    }
+  }
+}
+  
+  List<Product> products = [];
+
+  bool isLoading = false;
+  // bool isLoadingMore = false;
+  bool hasNextPage = true;
+
+  int currentPage = 1;
+
+  final ProductRepository productRepository =
+      ProductRepository(ApiClient());
+
 
   Future<void> openFilters() async {
     final result = await showModalBottomSheet<ProductFilters>(
@@ -75,7 +157,9 @@ class _ProductsPageState extends State<ProductsPage> {
       isScrollControlled: true,
       builder: (context) => FilterBottomSheet(
         initialFilters: filters,
-        availableCategories: categories.map((c) => c.label).toList(),
+      availableCategories: categories
+        .map((category) => category.title)
+        .toList(),
       ),
     );
 
@@ -87,7 +171,7 @@ class _ProductsPageState extends State<ProductsPage> {
   @override
   Widget build(BuildContext context) {
     // TODO: заменить на реальную фильтрацию из filters/selectedCategory
-    final filteredProducts = allProducts;
+    final filteredProducts = products;
 
     return SafeArea(
       top: false,
@@ -120,56 +204,116 @@ class _ProductsPageState extends State<ProductsPage> {
 
           const SizedBox(height: AppSpacing.md),
 
-          CategoryList(
-            categories: categories,
-            selectedIndex: selectedCategory,
-            onSelected: (index) => setState(() => selectedCategory = index),
-          ),
+          if (isLoadingCategories)
+            const SizedBox(
+              height: 40,
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else
+            CategoryList(
+              categories: categories,
+              selectedIndex: selectedCategory,
+              onSelected: (index) {
+                setState(() {
+                  selectedCategory = index;
+                });
+              },
+            ),
 
           const SizedBox(height: AppSpacing.md),
 
-          Expanded(
-            child: filteredProducts.isEmpty
-                ? Center(
-                    child: Text(
-                      'Товарів не знайдено',
-                      style: AppTextStyles.bodySmall,
-                    ),
-                  )
-                : GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.lg,
-                      0,
-                      AppSpacing.lg,
-                      AppSpacing.xl,
-                    ),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: AppSpacing.sm,
-                      crossAxisSpacing: AppSpacing.sm,
-                      childAspectRatio: 0.58,
-                    ),
-                    itemCount: filteredProducts.length,
-                    itemBuilder: (context, index) {
-                      final product = filteredProducts[index];
+        if (isLoadingProducts)
+          const SizedBox(
+            height: 40,
+            child: Center(
+              child: CircularProgressIndicator(),
+            ),
+          )
+        else
+         Expanded(
+          child: CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  0,
+                  AppSpacing.lg,
+                  0,
+                ),
+                sliver: SliverGrid(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final product = products[index];
 
                       return ProductCard(
-                        name: product.name,
-                        imageUrl: product.imageUrl,
-                        price: product.price,
-                        oldPrice: product.oldPrice,
-                        isSoldOut: product.isSoldOut,
+                        name: product.title,
+                        imageUrl: product.mainImage ?? '',
+                        price: product.productPrice.toInt(),
+                        isSoldOut: product.availableStock <= 0,
+
                         onTap: () {
+
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => const ProductDetailPage(),
+                              builder: (_) => ProductDetailPage(
+                                product: product,
+                              ),
                             ),
                           );
+
                         },
                       );
                     },
+                    childCount: products.length,
                   ),
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: AppSpacing.sm,
+                    crossAxisSpacing: AppSpacing.sm,
+                    childAspectRatio: 0.58,
+                  ),
+                ),
+              ),
+
+
+              if (hasNextPage)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: isLoadingMore
+                            ? null
+                            : loadMoreProducts,
+                        child: isLoadingMore
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Завантажити ще',
+                              ),
+                      ),
+                    ),
+                  ),
+                ),
+
+
+              const SliverToBoxAdapter(
+                child: SizedBox(
+                  height: AppSpacing.xl,
+                ),
+              ),
+            ],
           ),
+        ),
         ],
       ),
     );
