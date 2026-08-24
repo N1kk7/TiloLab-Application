@@ -81,6 +81,7 @@ class ProductSection extends StatelessWidget {
               return SizedBox(
                 width: 160,
                 child: ProductCard(
+                  id: product.id.toString(),
                   name: product.title,
 
                   imageUrl: product.mainImage ?? '',

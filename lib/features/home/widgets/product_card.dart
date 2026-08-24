@@ -5,7 +5,15 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 
-class ProductCard extends StatefulWidget {
+// STORES
+
+import '../../../store/favorites_store.dart';
+
+// MODELS
+import '../../../models/favorites/favorite_product.dart';
+
+class ProductCard extends StatelessWidget {
+  final String id;
   final String name;
   final String imageUrl;
   final int price;
@@ -15,6 +23,7 @@ class ProductCard extends StatefulWidget {
 
   const ProductCard({
     super.key,
+    required this.id,
     required this.name,
     required this.imageUrl,
     required this.price,
@@ -24,18 +33,10 @@ class ProductCard extends StatefulWidget {
   });
 
   @override
-  State<ProductCard> createState() => _ProductCardState();
-}
-
-class _ProductCardState extends State<ProductCard> {
-  bool isFavorite = false;
-
-  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: widget.onTap,
+      onTap: onTap,
       child: Container(
-        width: 160,
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.md),
@@ -49,7 +50,7 @@ class _ProductCardState extends State<ProductCard> {
                 AspectRatio(
                   aspectRatio: 1,
                   child: Image.network(
-                    widget.imageUrl,
+                    imageUrl,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Container(
                       color: AppColors.surfaceElevated,
@@ -65,25 +66,40 @@ class _ProductCardState extends State<ProductCard> {
                 Positioned(
                   top: AppSpacing.xs,
                   right: AppSpacing.xs,
-                  child: Material(
-                    color: AppColors.bg.withOpacity(0.5),
-                    shape: const CircleBorder(),
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: () => setState(() => isFavorite = !isFavorite),
-                      child: Padding(
-                        padding: const EdgeInsets.all(6),
-                        child: Icon(
-                          isFavorite ? Icons.favorite : Icons.favorite_border,
-                          size: 16,
-                          color: isFavorite ? AppColors.accentRed : AppColors.text,
+                  child: ListenableBuilder(
+                    listenable: FavoritesStore.instance,
+                    builder: (context, _) {
+                      final isFavorite = FavoritesStore.instance.isFavorite(id);
+
+                      return Material(
+                        color: AppColors.bg.withOpacity(0.5),
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: () => FavoritesStore.instance.toggle(
+                            FavoriteProduct(
+                              id: id,
+                              name: name,
+                              imageUrl: imageUrl,
+                              price: price,
+                              oldPrice: oldPrice,
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(6),
+                            child: Icon(
+                              isFavorite ? Icons.favorite : Icons.favorite_border,
+                              size: 16,
+                              color: isFavorite ? AppColors.accentRed : AppColors.text,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ),
 
-                if (widget.isSoldOut)
+                if (isSoldOut)
                   Positioned(
                     left: 0,
                     right: 0,
@@ -110,40 +126,36 @@ class _ProductCardState extends State<ProductCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.name,
+                    name,
                     style: AppTextStyles.bodySmall.copyWith(color: AppColors.text),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-
                   const SizedBox(height: AppSpacing.xs),
-
                   Row(
-                  children: [
-                    Text(
-                      '${widget.price} грн',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: widget.oldPrice == null
-                            ? AppColors.text
-                            : AppColors.discountPrice,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (widget.oldPrice != null) ...[
-                      const SizedBox(width: AppSpacing.xs),
-                      Flexible(
-                        child: Text(
-                          '${widget.oldPrice} грн',
-                          style: AppTextStyles.caption.copyWith(
-                            color: AppColors.darkText,
-                            decoration: TextDecoration.lineThrough,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                    children: [
+                      Text(
+                        '$price грн',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: oldPrice == null ? AppColors.text : AppColors.discountPrice,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
+                      if (oldPrice != null) ...[
+                        const SizedBox(width: AppSpacing.xs),
+                        Flexible(
+                          child: Text(
+                            '$oldPrice грн',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.darkText,
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
-                ),
+                  ),
                 ],
               ),
             ),

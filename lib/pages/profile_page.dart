@@ -9,6 +9,32 @@ import '../features/profile/widgets/profile_menu_tile.dart';
 import '../features/profile/widgets/profile_section_label.dart';
 import '../features/profile/widgets/profile_stats.dart';
 
+import '../features/profile/pages/edit_profile_page.dart';
+
+// ORDER HISTORYY
+import '../features//orders/pages/order_history_page.dart';
+
+// FAVORITES PRODUCTS
+import '../features/favorites/pages/favorites_page.dart';
+
+// CERTIFICATES
+import '../features/certificates/pages/certificates_page.dart';
+
+// ADDRESSES PAGE
+import '../features/addreses/pages/addresses_page.dart';
+
+// NOTIFICCATIONS PAGE
+import '../features/settings/pages/notifications_page.dart';
+
+// PRIVACY PAGE
+import '../features/settings/pages/privacy_page.dart';
+
+// FAQ PAGE
+import '../features/faq/pages/faq_page.dart';
+
+// CONTACT US PAGE
+import '../features/contact/pages/contact_page.dart';
+
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -28,9 +54,9 @@ class ProfilePage extends StatelessWidget {
           ProfileHeader(
             name: 'Олена Ковальчук',
             email: 'olena.k@example.com',
-            onEdit: () {
-              // TODO: перейти на редагування профілю
-            },
+            onEdit: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const EditProfilePage()),
+            ),
           ),
 
           const SizedBox(height: AppSpacing.lg),
@@ -56,19 +82,26 @@ class ProfilePage extends StatelessWidget {
                 ProfileMenuTile(
                   icon: Icons.receipt_long_outlined,
                   label: 'Історія замовлень',
-                  onTap: () {},
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const OrderHistoryPage()),
+                  ),
                 ),
                 const Divider(color: AppColors.borderNeutral, height: 1),
                 ProfileMenuTile(
                   icon: Icons.favorite_border,
                   label: 'Улюблені товари',
-                  onTap: () {},
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const FavoritesPage()),
+                  ),
                 ),
                 const Divider(color: AppColors.borderNeutral, height: 1),
                 ProfileMenuTile(
                   icon: Icons.card_giftcard_outlined,
                   label: 'Мої сертифікати',
-                  onTap: () {},
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const CertificatesPage()),
+                  ),
+
                 ),
               ],
             ),
@@ -87,19 +120,25 @@ class ProfilePage extends StatelessWidget {
                 ProfileMenuTile(
                   icon: Icons.location_on_outlined,
                   label: 'Адреси доставки',
-                  onTap: () {},
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const AddressesPage()),
+                  ),
                 ),
                 const Divider(color: AppColors.borderNeutral, height: 1),
                 ProfileMenuTile(
                   icon: Icons.notifications_none,
                   label: 'Сповіщення',
-                  onTap: () {},
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const NotificationsPage()),
+                  ),
                 ),
                 const Divider(color: AppColors.borderNeutral, height: 1),
                 ProfileMenuTile(
                   icon: Icons.lock_outline,
                   label: 'Конфіденційність',
-                  onTap: () {},
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const PrivacyPage()),
+                  ),
                 ),
               ],
             ),
@@ -118,13 +157,17 @@ class ProfilePage extends StatelessWidget {
                 ProfileMenuTile(
                   icon: Icons.help_outline,
                   label: 'FAQ',
-                  onTap: () {},
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const FaqPage()),
+                  ),
                 ),
                 const Divider(color: AppColors.borderNeutral, height: 1),
                 ProfileMenuTile(
                   icon: Icons.support_agent_outlined,
                   label: 'Звʼязатися з нами',
-                  onTap: () {},
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => ContactPage()),
+                  ),
                 ),
               ],
             ),

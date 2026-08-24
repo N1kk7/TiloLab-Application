@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_spacing.dart';
 import '../../../models/category/category.dart';
-import 'category_chip.dart';
+import 'category_avatar_item.dart';
 
 class CategoryList extends StatelessWidget {
   final List<Category> categories;
@@ -19,20 +19,16 @@ class CategoryList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 40,
+      height: 88,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         itemCount: categories.length,
-        separatorBuilder: (_, __) => const SizedBox(
-          width: AppSpacing.sm,
-        ),
+        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
         itemBuilder: (context, index) {
           final category = categories[index];
 
-          return CategoryChip(
+          return CategoryAvatarItem(
             label: category.title,
             imageUrl: category.categoryImg,
             isSelected: index == selectedIndex,
