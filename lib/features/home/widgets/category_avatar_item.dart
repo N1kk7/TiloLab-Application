@@ -27,9 +27,9 @@ class CategoryAvatarItem extends StatelessWidget {
         children: [
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            width: 56,
-            height: 56,
-            padding: const EdgeInsets.all(12),
+            width: 62,
+            height: 62,
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isSelected

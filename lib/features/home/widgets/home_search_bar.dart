@@ -49,19 +49,6 @@ class HomeSearchBar extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: AppSpacing.sm),
-          Material(
-            color: AppColors.surface,
-            shape: const CircleBorder(),
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: onFilterTap,
-              child: const Padding(
-                padding: EdgeInsets.all(12),
-                child: Icon(Icons.tune, size: 20, color: AppColors.darkText),
-              ),
-            ),
-          ),
         ],
       ),
     );
