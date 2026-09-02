@@ -18,6 +18,10 @@ import '../features/home/widgets/feature_highlights.dart';
 import '../features/home/widgets/category_list_skeleton.dart';
 import '../features/home/widgets/product_card_skeleton.dart';
 
+
+import 'package:tilolab_app/core/services/app_tooltip.dart';
+import 'package:tilolab_app/core/services/tooltip_type.dart';
+
 class IndexPage extends ConsumerStatefulWidget {
   const IndexPage({super.key});
 
@@ -96,6 +100,11 @@ class _IndexPageState extends ConsumerState<IndexPage> {
       debugPrint(
         'ERROR LOAD HOME DATA: $error',
       );
+
+      AppToast.error(
+        context,
+        'Помилка завантаження даних, перевірте мережу',
+      );
     }
   }
 
@@ -136,6 +145,59 @@ class _IndexPageState extends ConsumerState<IndexPage> {
           // ======================================================
           // CTA
           // ======================================================
+
+          const SizedBox(height: AppSpacing.xl),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => AppToast.show(
+                      context,
+                      type: TooltipType.error,
+                      message: 'Не вдалося завантажити дані',
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.errorBorder),
+                    ),
+                    child: const Text('Помилка'),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => AppToast.show(
+                      context,
+                      type: TooltipType.warning,
+                      message: 'Залишився 1 товар на складі',
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.warningBorder),
+                    ),
+                    child: const Text('Попередження'),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => AppToast.show(
+                      context,
+                      type: TooltipType.success,
+                      message: 'Товар додано в кошик',
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.successBorder),
+                    ),
+                    child: const Text('Успіх'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: AppSpacing.xl),
 
           Padding(
             padding:

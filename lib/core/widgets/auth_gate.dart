@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -18,14 +20,45 @@ class AuthGate extends StatefulWidget {
 class _AuthGateState extends State<AuthGate> {
   late final Future<_StartDestination> _resolution = _resolve();
 
-  Future<_StartDestination> _resolve() async {
-    final session = Supabase.instance.client.auth.currentSession;
+  StreamSubscription<AuthState>? _authSubscription;
 
-    // supabase_flutter відновлює збережену сесію (і сам оновлює токен,
-    // якщо він протух, але refresh token ще живий) вже до завершення
-    // Supabase.initialize() в main() — тож на цьому етапі currentSession
-    // вже відображає актуальний стан з диска.
-    final hasValidSession = session != null && !session.isExpired;
+  Future<_StartDestination> _resolve() async {
+    final auth = Supabase.instance.client.auth;
+
+    // Ждём, пока supabase_flutter завершит попытку відновити/оновити
+    // сесію з диска. Це асинхронний процес: initialize() кладе стару
+    // сесію в currentSession одразу, але реальне оновлення токена
+    // через refresh token приходить трохи пізніше, окремим event'ом.
+    final initialState = await auth.onAuthStateChange.first.timeout(
+      const Duration(seconds: 5),
+      onTimeout: () {
+        debugPrint('[AuthGate] auth state timeout — treating as signed out');
+        return AuthState(AuthChangeEvent.signedOut, null);
+      },
+    );
+
+    debugPrint(
+      '[AuthGate] initial auth event: ${initialState.event}, '
+      'session=${initialState.session != null}',
+    );
+
+    // Тепер підписуємось на подальші зміни (наприклад, якщо сесія
+    // "помре" вже під час роботи застосунку — токен не вдалось оновити,
+    // refresh token теж протух і т.д.) і одразу викидаємо на логін.
+    _authSubscription = auth.onAuthStateChange.listen((state) {
+      debugPrint('[AuthGate] auth state changed: ${state.event}');
+
+      if (state.event == AuthChangeEvent.signedOut && mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => const OnboardingPage(startAtAuthStep: true),
+          ),
+          (route) => false,
+        );
+      }
+    });
+
+    final hasValidSession = auth.currentSession != null;
 
     if (hasValidSession) {
       return _StartDestination.home;
@@ -36,6 +69,12 @@ class _AuthGateState extends State<AuthGate> {
     return onboardingCompleted
         ? _StartDestination.authOnly
         : _StartDestination.onboarding;
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 
   @override
