@@ -6,6 +6,9 @@ import 'np_warehouse.dart';
 class NovaPoshtaRepository {
   final ApiClient _client;
 
+
+  
+
   NovaPoshtaRepository(this._client);
 
   /// Аналог getCitiesNp — пошук міст за назвою.
